@@ -1,4 +1,5 @@
 import MidtransNotificationController from './MidtransNotificationController'
+import Auth from './Auth'
 import TagihanBayarSelesaiController from './TagihanBayarSelesaiController'
 import TagihanBayarController from './TagihanBayarController'
 import UserController from './UserController'
@@ -11,6 +12,7 @@ import TagihanWaReminderController from './TagihanWaReminderController'
 import Settings from './Settings'
 const Controllers = {
     MidtransNotificationController: Object.assign(MidtransNotificationController, MidtransNotificationController),
+Auth: Object.assign(Auth, Auth),
 TagihanBayarSelesaiController: Object.assign(TagihanBayarSelesaiController, TagihanBayarSelesaiController),
 TagihanBayarController: Object.assign(TagihanBayarController, TagihanBayarController),
 UserController: Object.assign(UserController, UserController),

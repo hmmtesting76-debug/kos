@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RoleController;
@@ -15,6 +16,17 @@ use App\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('home');
+
+Route::controller(PasswordResetController::class)->group(function () {
+    Route::get('forgot-password', 'create')->name('password.request');
+    Route::post('forgot-password', 'sendOtp')
+        ->middleware('throttle:password-reset-otp')
+        ->name('password.email');
+    Route::get('reset-password/{token?}', 'show')->name('password.reset');
+    Route::post('reset-password', 'reset')
+        ->middleware('throttle:password-reset')
+        ->name('password.update');
+});
 
 // Halaman publik untuk penyewa (dibuka dari link di pesan WhatsApp).
 // 'bayar/selesai' didaftarkan sebelum 'bayar/{tagihan}' agar tidak

@@ -10,6 +10,8 @@ final class FonnteWhatsAppService implements WhatsAppService
     public function sendMessage(string $target, string $message): bool
     {
         $response = Http::asForm()
+            ->connectTimeout(3)
+            ->timeout(10)
             ->withHeaders([
                 'Authorization' => (string) config('whatsapp.fonnte.token'),
             ])

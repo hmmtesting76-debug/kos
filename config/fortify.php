@@ -116,6 +116,12 @@ return [
 
     'limiters' => [
         'login' => 'login',
+        'password_reset_otp' => 'password-reset-otp',
+        'password_reset' => 'password-reset',
+    ],
+
+    'password_reset_otp' => [
+        'expire' => 5,
     ],
 
     /*
@@ -144,7 +150,6 @@ return [
 
     'features' => [
         Features::registration(),
-        Features::resetPasswords(),
     ],
 
 ];

@@ -1,78 +1,69 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Support\Facades\Notification;
-use Laravel\Fortify\Features;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
-beforeEach(function () {
-    $this->skipUnlessFortifyHas(Features::resetPasswords());
-});
-
-test('reset password link screen can be rendered', function () {
+test('password reset screen can be rendered', function () {
     $response = $this->get(route('password.request'));
 
     $response->assertOk();
 });
 
-test('reset password link can be requested', function () {
-    Notification::fake();
+test('password reset otp can be requested by phone number', function () {
+    config(['whatsapp.fonnte.url' => 'https://api.fonnte.test/send']);
+    Http::fake([
+        'https://api.fonnte.test/send' => Http::response(['status' => true]),
+    ]);
 
     $user = User::factory()->create();
 
-    $this->post(route('password.email'), ['email' => $user->email]);
+    $response = $this->post(route('password.email'), ['no_hp' => $user->no_hp]);
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    $response
+        ->assertRedirect(route('password.request', ['otp_sent' => 1]))
+        ->assertSessionHas('status');
+    Http::assertSent(fn (Request $request): bool => $request->data()['target'] === (string) $user->refresh()->no_hp);
 });
 
-test('reset password screen can be rendered', function () {
-    Notification::fake();
+test('password can be reset with a valid phone otp', function () {
+    config(['whatsapp.fonnte.url' => 'https://api.fonnte.test/send']);
+    $message = null;
+    Http::fake(function (Request $request) use (&$message) {
+        $message = $request->data()['message'];
 
-    $user = User::factory()->create();
-
-    $this->post(route('password.email'), ['email' => $user->email]);
-
-    Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-        $response = $this->get(route('password.reset', $notification->token));
-
-        $response->assertOk();
-
-        return true;
+        return Http::response(['status' => true]);
     });
-});
-
-test('password can be reset with valid token', function () {
-    Notification::fake();
 
     $user = User::factory()->create();
 
-    $this->post(route('password.email'), ['email' => $user->email]);
+    $this->post(route('password.email'), ['no_hp' => $user->no_hp]);
 
-    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-        $response = $this->post(route('password.update'), [
-            'token' => $notification->token,
-            'email' => $user->email,
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
+    preg_match('/\b\d{6}\b/', (string) $message, $matches);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('login'));
+    $response = $this->post(route('password.update'), [
+        'no_hp' => $user->no_hp,
+        'otp' => $matches[0],
+        'password' => 'new-password',
+        'password_confirmation' => 'new-password',
+    ]);
 
-        return true;
-    });
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('login'));
+    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
-test('password cannot be reset with invalid token', function () {
+test('password cannot be reset with an invalid otp', function () {
     $user = User::factory()->create();
 
     $response = $this->post(route('password.update'), [
-        'token' => 'invalid-token',
-        'email' => $user->email,
+        'no_hp' => $user->no_hp,
+        'otp' => '123456',
         'password' => 'newpassword123',
         'password_confirmation' => 'newpassword123',
     ]);
 
-    $response->assertSessionHasErrors('email');
+    $response->assertSessionHasErrors('otp');
 });
