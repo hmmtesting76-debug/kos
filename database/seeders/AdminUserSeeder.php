@@ -19,7 +19,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $noHp = env('ADMIN_NO_HP', '081234567890');
+        $noHp = env('ADMIN_NO_HP', '6285');
 
         $admin = User::query()->firstOrCreate(
             ['no_hp' => (int) $noHp],
